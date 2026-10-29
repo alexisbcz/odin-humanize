@@ -77,17 +77,21 @@ is_digit :: #force_inline proc "contextless" (c: byte) -> bool {
 
 /*
 scan_decimal reads an unsigned decimal number, such as "12", "1.5" or ".25",
-from the start of `s`. With `allow_grouping`, a comma between two digits of
-the whole part is skipped, so "1,024" reads as 1024.
+from the start of `s`. With `allow_grouping`, commas may group the whole part
+in threes, so "1,024" reads as 1024.
 
 Returns the number, the text after it, and `.Invalid_Number` when `s` does not
-start with a number or `.Overflow` when the whole part exceeds `max(u64)`.
+start with a number or groups its digits wrongly, as in "1,5" or "12,34,567",
+or `.Overflow` when the whole part exceeds `max(u64)`.
 */
 @(private)
 scan_decimal :: proc(s: string, allow_grouping: bool) -> (d: Decimal, rest: string, err: Parse_Error) {
 	d.scale = 1
 	i := 0
 	whole_digits := 0
+	// group_digits counts the digits since the last grouping comma.
+	group_digits := 0
+	grouped := false
 	scan: for i < len(s) {
 		c := s[i]
 		switch {
@@ -98,12 +102,22 @@ scan_decimal :: proc(s: string, allow_grouping: bool) -> (d: Decimal, rest: stri
 			}
 			d.whole = d.whole * 10 + digit
 			whole_digits += 1
+			group_digits += 1
 		case c == ',' && allow_grouping && whole_digits > 0 && i + 1 < len(s) && is_digit(s[i + 1]):
-			// Digit grouping separator; skip it.
+			// A grouping comma follows a lead group of 1 to 3 digits or a full group of 3.
+			if group_digits != 3 if grouped else group_digits > 3 {
+				return {}, s, .Invalid_Number
+			}
+			grouped = true
+			group_digits = 0
 		case:
 			break scan
 		}
 		i += 1
+	}
+	// The last group must be complete, so a decimal comma such as "1,5" is rejected.
+	if grouped && group_digits != 3 {
+		return {}, s, .Invalid_Number
 	}
 
 	frac_digits := 0

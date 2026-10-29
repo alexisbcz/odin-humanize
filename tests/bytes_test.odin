@@ -248,3 +248,18 @@ test_bytes_round_trip :: proc(t: ^testing.T) {
 		delete(text, alloc)
 	}
 }
+
+@(test)
+test_parse_bytes_rejects_misplaced_grouping :: proc(t: ^testing.T) {
+	// A decimal comma, as in "1,5 MB", must not silently read as 15 MB.
+	expect_parse_bytes_error(t, "1,5 MB", .Invalid_Number)
+	expect_parse_bytes_error(t, "1,5", .Invalid_Number)
+	expect_parse_bytes_error(t, "1,0000 B", .Invalid_Number)
+	expect_parse_bytes_error(t, "12,34,567", .Invalid_Number)
+	expect_parse_bytes_error(t, "1234,567", .Invalid_Number)
+	expect_parse_bytes_error(t, "1,024,5 kB", .Invalid_Number)
+	expect_parse_bytes_error(t, "1,02.5 kB", .Invalid_Number)
+	expect_parse_bytes(t, "999,999,999", 999_999_999)
+	expect_parse_bytes(t, "12,345 B", 12_345)
+	expect_parse_bytes(t, "1,024.5 kB", 1_024_500)
+}

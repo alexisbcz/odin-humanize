@@ -110,12 +110,14 @@ returns it in bytes.
 Units are case-insensitive. "k", "kB" and "kilobytes" mean 1000; "Ki", "KiB"
 and "kibibytes" mean 1024, and likewise for M, G, T, P and E. A bare number,
 "B", "byte" or "bytes" means bytes. Whitespace may surround the number and the
-unit. Fractions of a byte are dropped, so "1.5 B" is 1.
+unit. Commas may group the whole part in threes, as in "1,024,000"; any other
+comma, such as the decimal comma in "1,5 MB", is `.Invalid_Number` rather than
+a silent 15 MB. Fractions of a byte are dropped, so "1.5 B" is 1.
 
 Returns:
 - n: the size in bytes.
-- err: `.Empty`, `.Invalid_Number` (including any sign), `.Unknown_Unit`,
-  `.Overflow` when the size exceeds `max(u64)`, or `.None`.
+- err: `.Empty`, `.Invalid_Number` (including any sign or misplaced comma),
+  `.Unknown_Unit`, `.Overflow` when the size exceeds `max(u64)`, or `.None`.
 */
 parse_bytes :: proc(s: string) -> (n: u64, err: Parse_Error) {
 	text := strings.trim_space(s)
