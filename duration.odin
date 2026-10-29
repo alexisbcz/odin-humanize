@@ -146,7 +146,8 @@ the pairs. Units are case-insensitive:
 - d, day(s), meaning 24 hours
 - w, wk, wks, week(s), meaning 7 days
 
-A bare "0" is the only number allowed without a unit.
+A bare "0" is the only number allowed without a unit. A trailing comma or
+"and", as in "1h," or "1h and", is `.Invalid_Number`.
 
 Returns:
 - d: the parsed duration.
@@ -173,8 +174,13 @@ parse_duration :: proc(s: string) -> (d: time.Duration, err: Parse_Error) {
 	total: u128
 	pairs := 0
 	for {
+		before := text
 		text = skip_separators(text, pairs > 0)
 		if len(text) == 0 {
+			// A comma with nothing after it, as in "1h,", is as incomplete as a trailing "and".
+			if strings.contains_rune(before, ',') {
+				return 0, .Invalid_Number
+			}
 			break
 		}
 

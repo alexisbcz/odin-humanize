@@ -244,3 +244,12 @@ test_duration_round_trip :: proc(t: ^testing.T) {
 		}
 	}
 }
+
+@(test)
+test_parse_duration_rejects_trailing_separator :: proc(t: ^testing.T) {
+	// A trailing comma is as incomplete as a trailing "and".
+	expect_parse_duration_error(t, "1h,", .Invalid_Number)
+	expect_parse_duration_error(t, "1h30m, ", .Invalid_Number)
+	expect_parse_duration_error(t, "1h and", .Invalid_Number)
+	expect_parse_duration(t, "1h, 30m", time.Hour + 30 * time.Minute)
+}
