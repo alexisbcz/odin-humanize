@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-29
+
+### Fixed
+
+- `parse_bytes` rejects commas that don't group digits in threes. A decimal comma, as in `1,5 MB`, used to read as 15 MB and now returns `Invalid_Number`.
+- `parse_duration` rejects a trailing comma, as in `1h,`, the same way it rejects a trailing `and`.
+- `comma_float` rounds ties away from zero on the shortest decimal form of the value, so `1234.5` with no decimals prints `1,235` instead of `1,234`. Large values print their shortest digits, so `1e23` prints as a 1 followed by zeros.
+
 ## [0.1.0] - 2026-10-29
 
 ### Added
@@ -19,5 +27,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `comma`, `write_comma`, `comma_float` and `write_comma_float` group digits with a configurable separator and decimal point.
 - `Parse_Error` reports empty input, malformed numbers, missing or unknown units and overflow.
 
-[Unreleased]: https://github.com/alexisbcz/odin-humanize/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/alexisbcz/odin-humanize/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/alexisbcz/odin-humanize/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/alexisbcz/odin-humanize/releases/tag/v0.1.0

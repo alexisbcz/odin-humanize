@@ -95,7 +95,8 @@ fmt.println(strings.to_string(sb)) // 5 GiB in 1 hour 30 minutes, finished 3 min
 - **Bytes** below 1000, or 1024 for IEC, print as whole bytes: `512 B`. Larger sizes round half up to `decimals` places, default 1, and drop trailing zeros. Rounding that reaches the next unit moves to it, so 999,999 prints `1 MB`.
 - **Durations** start at the largest unit that isn't zero and cover `max_units` consecutive units, default 2. They truncate the rest and leave out zero units: 1h0m45s prints `1h`, and `1h45s` with `max_units = 3`.
 - **Relative times** truncate to the largest unit that fits. Under one second prints `now`, a month counts as 30 days and a year as 365 days.
-- **Parsing** ignores case and surrounding whitespace. `kB` means 1000 and `KiB` means 1024. Durations accept `ns`, `us` or `µs`, `ms`, `s`, `m`, `h`, `d` and `w`, spelled-out names, fractions such as `1.5h`, and a sign.
+- **Grouped floats** from `comma_float` round ties away from zero on the shortest decimal form of the value, so 2.5 prints `3` and 2.675 prints `2.68`.
+- **Parsing** ignores case and surrounding whitespace. `kB` means 1000 and `KiB` means 1024. Commas in sizes must group digits in threes, so `1,024 kB` works and the decimal comma in `1,5 MB` is an error, not 15 MB. Durations accept `ns`, `us` or `µs`, `ms`, `s`, `m`, `h`, `d` and `w`, spelled-out names, fractions such as `1.5h`, and a sign.
 
 ## Examples
 
