@@ -190,3 +190,24 @@ test_write_procedures_share_one_builder :: proc(t: ^testing.T) {
 	humanize.write_bytes(&sb, 2_000_000)
 	testing.expect_value(t, strings.to_string(sb), "3rd place, 12,500 points, 98.8%, 2 MB")
 }
+
+@(test)
+test_comma_float_rounds_half_away_from_zero :: proc(t: ^testing.T) {
+	// Exact ties round away from zero, like the byte formatter, not to even.
+	expect_comma_float(t, 1234.5, "1,235", decimals = 0)
+	expect_comma_float(t, 2.5, "3", decimals = 0)
+	expect_comma_float(t, 0.5, "1", decimals = 0)
+	expect_comma_float(t, -2.5, "-3", decimals = 0)
+	expect_comma_float(t, 0.125, "0.13")
+	expect_comma_float(t, 1.5, "2", decimals = 0)
+	// The shortest decimal form decides, so 2.675 rounds the way people read it.
+	expect_comma_float(t, 2.675, "2.68")
+	expect_comma_float(t, 1.005, "1.01")
+	expect_comma_float(t, 0.004, "0.00")
+	expect_comma_float(t, 9.995, "10.00")
+	expect_comma_float(t, 5e-324, "0.000000000", decimals = 9)
+	expect_comma_float(t, 0.1, "0.100000000", decimals = 9)
+	// Large values print their shortest digits, not the binary noise of the exact f64.
+	expect_comma_float(t, 1e23, "100,000,000,000,000,000,000,000", decimals = 0)
+	expect_comma_float(t, -999.9995, "-1,000.000", decimals = 3)
+}

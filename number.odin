@@ -104,6 +104,10 @@ comma :: proc(n: i64, sep := ',', allocator := context.allocator, loc := #caller
 write_comma_float appends `f` to `b` rounded to exactly `decimals` places,
 with the whole part grouped in threes, such as "1,234,567.89".
 
+Rounding works on the shortest decimal that reads back as `f` and sends ties
+away from zero, as people round by hand: 2.5 prints "3" with no decimals and
+2.675 prints "2.68", even though the nearest f64 to 2.675 is slightly below it.
+
 `decimals` is clamped to 0 through MAX_DECIMALS. `sep` separates groups and
 `point` separates the fraction, so `sep = '.', point = ','` gives the
 "1.234,5" form. NaN prints "NaN" and infinities print "Inf" or "-Inf". A
@@ -123,8 +127,9 @@ write_comma_float :: proc(b: ^strings.Builder, f: f64, decimals := 2, sep := ','
 	}
 
 	places := clamp(decimals, 0, MAX_DECIMALS)
+	// The shortest decimal that reads back as `f`; the 'f' format never uses an exponent.
 	buf: [512]byte
-	text := strconv.write_float(buf[:], f, 'f', places, 64)
+	text := strconv.write_float(buf[:], f, 'f', -1, 64)
 
 	negative := false
 	if len(text) > 0 && (text[0] == '-' || text[0] == '+') {
@@ -136,17 +141,40 @@ write_comma_float :: proc(b: ^strings.Builder, f: f64, decimals := 2, sep := ','
 		whole, frac = text[:dot], text[dot + 1:]
 	}
 
-	if negative && strings.trim_left(whole, "0") == "" && strings.trim_left(frac, "0") == "" {
+	// digits holds a spare leading '0' for a carry, the whole part, then exactly `places` fraction digits.
+	digits: [len(buf) + 1 + MAX_DECIMALS]byte
+	digits[0] = '0'
+	n := 1
+	n += copy(digits[n:], whole)
+	n += copy(digits[n:], frac[:min(places, len(frac))])
+	for _ in len(frac) ..< places {
+		digits[n] = '0'
+		n += 1
+	}
+	if len(frac) > places && frac[places] >= '5' {
+		// Round half away from zero.
+		i := n - 1
+		for digits[i] == '9' {
+			digits[i] = '0'
+			i -= 1
+		}
+		digits[i] += 1
+	}
+
+	whole_end := 1 + len(whole)
+	start := 0 if digits[0] != '0' || whole_end == 1 else 1
+	rounded := string(digits[start:n])
+	if negative && strings.trim_left(rounded, "0") == "" {
 		negative = false
 	}
 	if negative {
 		written += strings.write_byte(b, '-')
 	}
-	written += write_grouped(b, whole, sep)
-	if len(frac) > 0 {
-		n, _ := strings.write_rune(b, point)
-		written += n
-		written += strings.write_string(b, frac)
+	written += write_grouped(b, string(digits[start:whole_end]), sep)
+	if places > 0 {
+		r, _ := strings.write_rune(b, point)
+		written += r
+		written += strings.write_string(b, string(digits[whole_end:n]))
 	}
 	return
 }
